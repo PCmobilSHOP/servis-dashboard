@@ -1002,6 +1002,8 @@ if "delete_confirm_order_id" not in st.session_state:
 # PAGE STYLE
 # =============================
 
+st.set_page_config(page_title="Servisní dashboard", layout="wide", initial_sidebar_state="expanded")
+
 # =============================
 # LOGIN OCHRANA
 # =============================
@@ -1020,8 +1022,6 @@ if not st.session_state.authenticated:
             st.error("Nesprávné heslo")
 
     st.stop()
-
-st.set_page_config(page_title="Servisní dashboard", layout="wide", initial_sidebar_state="expanded")
 
 st.markdown("""
 <style>
