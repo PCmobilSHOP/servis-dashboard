@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Optional, Tuple
 from html import escape
 import base64
+import json
 
 import gspread
 import pandas as pd
@@ -120,10 +121,31 @@ STATUS_TO_WORKER_STATUS = {
 # =============================
 @st.cache_resource
 def get_gspread_client() -> gspread.Client:
+    """Vrátí Google Sheets klienta.
+
+    Online nasazení: bere service account ze Streamlit Secrets ze sekce
+    [gcp_service_account].
+
+    Lokální záloha: pokud secrets nejsou vyplněné, použije soubor
+    google-service-account.json vedle aplikace.
+    """
+    try:
+        service_account_info = dict(st.secrets.get("gcp_service_account", {}))
+    except Exception:
+        service_account_info = {}
+
+    if service_account_info:
+        credentials = Credentials.from_service_account_info(
+            service_account_info,
+            scopes=SCOPES,
+        )
+        return gspread.authorize(credentials)
+
     service_file = Path(SERVICE_ACCOUNT_FILE)
     if not service_file.exists():
         raise FileNotFoundError(
-            f"Soubor service accountu nebyl nalezen: {service_file.resolve()}"
+            "Chybí Google service account. Online ho vlož do Streamlit Secrets "
+            "jako sekci [gcp_service_account], lokálně jako google-service-account.json."
         )
 
     credentials = Credentials.from_service_account_file(
