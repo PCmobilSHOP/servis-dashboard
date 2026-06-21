@@ -1004,7 +1004,9 @@ if not st.session_state.authenticated:
     password = st.text_input("Zadejte heslo", type="password")
 
     if st.button("Přihlásit"):
-        if password == st.secrets.get("APP_PASSWORD", ""):
+        saved_password = str(st.secrets.get("APP_PASSWORD", "")).strip()
+
+        if password.strip() == saved_password:
             st.session_state.authenticated = True
             st.rerun()
         else:
