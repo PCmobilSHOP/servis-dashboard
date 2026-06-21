@@ -135,15 +135,6 @@ def get_gspread_client() -> gspread.Client:
         service_account_info = {}
 
     if service_account_info:
-        # Streamlit Secrets může private_key předat buď s reálnými odřádkováními,
-        # nebo jako text s \n. Google knihovna ale potřebuje platný PEM formát.
-        if "private_key" in service_account_info:
-            private_key = str(service_account_info.get("private_key") or "")
-            private_key = private_key.strip().strip('"').strip("'")
-            private_key = private_key.replace("\\n", "\n")
-            if "-----BEGIN PRIVATE KEY-----" in private_key and "-----END PRIVATE KEY-----" in private_key:
-                service_account_info["private_key"] = private_key
-
         credentials = Credentials.from_service_account_info(
             service_account_info,
             scopes=SCOPES,
