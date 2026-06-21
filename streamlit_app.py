@@ -135,6 +135,15 @@ def get_gspread_client() -> gspread.Client:
         service_account_info = {}
 
     if service_account_info:
+        # Streamlit Secrets může private_key předat buď s reálnými odřádkováními,
+        # nebo jako text s \n. Google knihovna ale potřebuje platný PEM formát.
+        if "private_key" in service_account_info:
+            private_key = str(service_account_info.get("private_key") or "")
+            private_key = private_key.strip().strip('"').strip("'")
+            private_key = private_key.replace("\\n", "\n")
+            if "-----BEGIN PRIVATE KEY-----" in private_key and "-----END PRIVATE KEY-----" in private_key:
+                service_account_info["private_key"] = private_key
+
         credentials = Credentials.from_service_account_info(
             service_account_info,
             scopes=SCOPES,
@@ -996,17 +1005,52 @@ st.set_page_config(page_title="Servisní dashboard", layout="wide", initial_side
 # =============================
 # LOGIN OCHRANA
 # =============================
+def get_app_password_from_secrets() -> str:
+    """Načte heslo z Streamlit Secrets.
+
+    Správně má být APP_PASSWORD nahoře v secrets jako:
+    APP_PASSWORD = "tvoje_heslo"
+
+    Pro jistotu ale podporujeme i případ, kdy bylo omylem vložené
+    pod sekci [gcp_service_account].
+    """
+    candidates = []
+
+    try:
+        candidates.append(st.secrets.get("APP_PASSWORD", ""))
+    except Exception:
+        pass
+
+    try:
+        gcp_secrets = st.secrets.get("gcp_service_account", {})
+        if hasattr(gcp_secrets, "get"):
+            candidates.append(gcp_secrets.get("APP_PASSWORD", ""))
+    except Exception:
+        pass
+
+    for candidate in candidates:
+        value = str(candidate or "").strip().strip('"').strip("'")
+        if value:
+            return value
+
+    return ""
+
+
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
     st.markdown("## 🔒 Servisní dashboard")
-    password = st.text_input("Zadejte heslo", type="password")
+    st.caption("Pro přístup do interního servisního dashboardu zadejte heslo.")
 
-    if st.button("Přihlásit"):
-        saved_password = str(st.secrets.get("APP_PASSWORD", "")).strip()
+    password = st.text_input("Heslo", type="password", key="login_password")
 
-        if password.strip() == saved_password:
+    if st.button("Přihlásit", type="primary"):
+        saved_password = get_app_password_from_secrets()
+
+        if not saved_password:
+            st.error("V Streamlit Secrets chybí APP_PASSWORD.")
+        elif str(password or "").strip() == saved_password:
             st.session_state.authenticated = True
             st.rerun()
         else:
