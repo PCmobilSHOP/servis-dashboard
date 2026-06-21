@@ -1001,6 +1001,26 @@ if "delete_confirm_order_id" not in st.session_state:
 # =============================
 # PAGE STYLE
 # =============================
+
+# =============================
+# LOGIN OCHRANA
+# =============================
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+if not st.session_state.authenticated:
+    st.title("🔒 Servis Dashboard")
+    password = st.text_input("Zadejte heslo", type="password")
+
+    if st.button("Přihlásit"):
+        if password == st.secrets.get("APP_PASSWORD", ""):
+            st.session_state.authenticated = True
+            st.rerun()
+        else:
+            st.error("Nesprávné heslo")
+
+    st.stop()
+
 st.set_page_config(page_title="Servisní dashboard", layout="wide", initial_sidebar_state="expanded")
 
 st.markdown("""
